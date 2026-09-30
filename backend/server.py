@@ -901,6 +901,15 @@ def main() -> None:
         sys.exit("Missing ASSEMBLYAI_API_KEY. Add it to .env")
 
     AGENT = _publish_or_get_agent()
+    # Belt-and-suspenders: a stale stored ID (deleted dashboard agent or a
+    # key swap) must never be served to browsers — verify, else publish fresh.
+    try:
+        _aai(f"/agents/{AGENT['id']}")
+    except RuntimeError:
+        print(f"Agent {AGENT['id']} missing at startup, publishing a fresh one.")
+        os.environ.pop("AGENT_ID", None)
+        os.environ.pop("AGENT_ID_INTERVIEWCOACH", None)
+        AGENT = _publish_or_get_agent()
     print(f"Agent ID: {AGENT['id']}")
 
     # Build the landing page (public careers site). Interview rooms are

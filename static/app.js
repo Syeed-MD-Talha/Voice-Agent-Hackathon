@@ -410,11 +410,12 @@ async function start() {
       switch (msg.type) {
         case 'session.ready':
           ready = true;
+          try { sessionStorage.removeItem('ic_cfg_reload'); } catch (_) {}
           callStart = Date.now();
           timer = setInterval(tick, 1000);
           tick();
           setStatus('listening');
-          setTalhatar('listening');
+          setAvatar('listening');
           if (btn) { btn.disabled = false; btn.textContent = 'End call'; btn.classList.add('live'); }
           logEvent('down', msg.type, msg.session_id);
           break;
@@ -422,14 +423,14 @@ async function start() {
         case 'input.speech.started':
           playback?.port.postMessage('stop');
           setStatus('listening');
-          setTalhatar('listening');
+          setAvatar('listening');
           lastEvent = msg.type;
           logEvent('down', msg.type);
           break;
 
         case 'reply.started':
           setStatus('speaking');
-          setTalhatar('speaking');
+          setAvatar('speaking');
           lastEvent = msg.type;
           logEvent('down', msg.type);
           break;
@@ -445,7 +446,7 @@ async function start() {
 
         case 'reply.done':
           setStatus('listening');
-          setTalhatar('listening');
+          setAvatar('listening');
           lastEvent = msg.type;
           if (msg.status === 'interrupted') {
             playback?.port.postMessage('stop');
@@ -504,8 +505,20 @@ async function start() {
           break;
 
         case 'session.error':
-          setStatus('error', msg.message);
-          logEvent('down', msg.type, `${msg.code}: ${msg.message}`);
+          // Stale tab holding an agent ID from before a server restart/key
+          // change: fetch a fresh page (with the live agent ID) once, then
+          // show the error if it still fails.
+          if ((msg.code === 'agent_not_found' || /not found/i.test(msg.message || '')) &&
+              !sessionStorage.getItem('ic_cfg_reload')) {
+            sessionStorage.setItem('ic_cfg_reload', '1');
+            setStatus('connecting', 'refreshing interview setup…');
+            logEvent('down', msg.type, 'stale agent id — reloading page for fresh config');
+            try { ws.close(); } catch (_) {}
+            setTimeout(() => location.reload(), 1200);
+          } else {
+            setStatus('error', msg.message);
+            logEvent('down', msg.type, `${msg.code}: ${msg.message}`);
+          }
           break;
 
         default:
@@ -538,7 +551,7 @@ function stop() {
   restVideos();
   reset();
   setStatus('idle');
-  setTalhatar('idle');
+  setAvatar('idle');
 }
 
 function reset() {
@@ -577,7 +590,7 @@ function restVideos() {
   }
 }
 
-function setTalhatar(state) {
+function setAvatar(state) {
   const avatar = $('avatar');
   const label = $('avatar-label');
   const wave = $('wave');
