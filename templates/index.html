@@ -91,6 +91,11 @@
   #btn.live { background: var(--red); }
   #btn.live:hover { background: #9c3831; }
   .hint { font-size: 12.5px; color: var(--faint); margin-top: 12px; line-height: 1.55; }
+  .mic-check { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--faint); }
+  .mic-bar { flex: 1; height: 8px; border-radius: 8px; background: #e2d7ba; overflow: hidden; }
+  .mic-bar i { display: block; height: 100%; width: 0%; border-radius: 8px; background: var(--accent); transition: width .08s linear; }
+  .mic-warn { color: var(--red); font-weight: 600; letter-spacing: 0; font-size: 12px; }
+  .mic-warn[hidden] { display: none; }
 
   /* Transcript */
   #transcript { display: flex; flex-direction: column; gap: 10px; max-height: 440px; overflow-y: auto; padding-right: 4px; }
@@ -173,6 +178,7 @@
         <select id="mic" aria-label="Microphone"><option value="">Default microphone</option></select>
         <button id="btn">Start interview</button>
       </div>
+      <div class="mic-check"><span>MIC</span><div class="mic-bar"><i id="mic-level"></i></div><span class="mic-warn" id="mic-warn" hidden>No mic signal — check permission &amp; device</span></div>
       <div class="hint">🎧 Use Chrome with headphones and allow mic access. Answers are scored live — pass to unlock the next round.</div>
     </section>
 

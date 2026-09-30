@@ -330,6 +330,54 @@ try { navigator.mediaDevices?.addEventListener?.('devicechange', listMics); } ca
 const btnEl = $('btn');
 if (btnEl) btnEl.onclick = () => (ws?.readyState <= 1 ? stop() : start());
 
+// Live mic level meter: proves the browser is actually capturing audio.
+// If the bar never moves while you talk, the problem is mic/device/permission
+// (not the AI). Warns once if the mic stays dead silent after the call starts.
+let micRaf = null;
+let micPeak = 0;
+let micWarned = false;
+
+function startMicMeter(source) {
+  stopMicMeter();
+  micWarned = false;
+  try {
+    const analyser = captureCtx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+    const t0 = Date.now();
+    const loop = () => {
+      analyser.getFloatTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+      const rms = Math.sqrt(sum / buf.length);
+      if (rms > micPeak) micPeak = rms;
+      const bar = $('mic-level');
+      if (bar) bar.style.width = Math.min(100, rms * 400) + '%';
+      const warn = $('mic-warn');
+      if (micPeak >= 0.02) {
+        if (warn) warn.hidden = true;
+      } else if (!micWarned && Date.now() - t0 > 6000) {
+        micWarned = true;
+        if (warn) warn.hidden = false;
+        logEvent('sys', 'mic.silent', 'no mic signal 6s after start — check device/permission');
+      }
+      micRaf = requestAnimationFrame(loop);
+    };
+    loop();
+  } catch (_) {}
+}
+
+function stopMicMeter() {
+  if (micRaf) cancelAnimationFrame(micRaf);
+  micRaf = null;
+  micPeak = 0;
+  const bar = $('mic-level');
+  if (bar) bar.style.width = '0%';
+  const warn = $('mic-warn');
+  if (warn) warn.hidden = true;
+}
+
 async function addWorklet(ctx, code, name) {
   const url = blobUrl(code);
   try {
@@ -377,7 +425,9 @@ async function start() {
     listMics();
     warmVideos(); // user gesture here unlocks muted playback; warms decoders early
     const capture = await addWorklet(captureCtx, CAPTURE_WORKLET, 'capture');
-    captureCtx.createMediaStreamSource(mic).connect(capture);
+    const micSource = captureCtx.createMediaStreamSource(mic);
+    micSource.connect(capture);
+    startMicMeter(micSource);
 
     const url = new URL('wss://agents.assemblyai.com/v1/ws');
     url.searchParams.set('token', token);
@@ -549,6 +599,7 @@ function stop() {
   try { playbackCtx?.close(); } catch (_) {}
   captureCtx = playbackCtx = playback = mic = null;
   restVideos();
+  stopMicMeter();
   reset();
   setStatus('idle');
   setAvatar('idle');
