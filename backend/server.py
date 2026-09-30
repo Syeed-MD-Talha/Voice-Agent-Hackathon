@@ -663,15 +663,12 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/auth/signup":
-            from database import count_users, create_auth_token, create_user, init_db
+            from database import create_auth_token, create_user, init_db
             init_db()
             data = self._read_json_body()
             try:
-                # First account ever can be created openly; afterwards require
-                # an existing admin session to invite more admins.
-                if count_users() > 0 and not _current_admin(self):
-                    self._send(403, b'{"error":"Sign in to invite another admin."}', "application/json")
-                    return
+                # Open registration: anyone with the link can create an admin
+                # account and manage their own hiring dashboard.
                 user = create_user(data.get("email", ""), data.get("password", ""),
                                    data.get("name", ""))
                 token = create_auth_token(user["id"])
