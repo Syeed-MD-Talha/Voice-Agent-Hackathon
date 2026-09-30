@@ -1,0 +1,19 @@
+# Secrets — never commit real keys (copy .env.example to .env locally)
+.env
+
+# Local runtime data (regenerates + seeds on startup)
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

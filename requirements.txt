@@ -1,0 +1,5 @@
+# InterviewCoach — AssemblyAI Voice Agent Hackathon
+# Python standard library only — no pip install needed.
+#
+# The full voice pipeline (STT + LLM + TTS + turn detection) runs inside the
+# AssemblyAI Voice Agent API. The local tools server uses stdlib only.

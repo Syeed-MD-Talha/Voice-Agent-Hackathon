@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>You're through to the next round — {{ROLE_NAME}}</title>
+<style>
+  :root { --bg:#0b0d17; --card:#1e2340; --border:#2a3054; --text:#eef0ff; --muted:#a6accd;
+    --accent:#7c6cff; --accent2:#4de3c2; --green:#34d399; --font:"Inter",system-ui,sans-serif; --mono:ui-monospace,monospace; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--font); background:radial-gradient(900px 450px at 20% -10%,#2b2b70 0%,transparent 60%),radial-gradient(800px 400px at 90% 0%,#123f3a 0%,transparent 55%),var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px; }
+  .pass { width:100%; max-width:560px; background:linear-gradient(180deg,var(--card),#161a2e); border:1px solid var(--border); border-radius:24px; padding:34px; box-shadow:0 30px 90px rgba(0,0,0,.55); text-align:center; }
+  .seal { width:84px; height:84px; border-radius:50%; margin:0 auto 16px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:40px; box-shadow:0 0 0 8px rgba(52,211,153,.15),0 0 50px rgba(124,108,255,.5); }
+  .eyebrow { font-size:12px; letter-spacing:.16em; color:var(--accent2); margin-bottom:10px; }
+  h1 { font-size:30px; letter-spacing:-.02em; margin-bottom:8px; }
+  .role { color:var(--muted); font-size:15px; margin-bottom:18px; }
+  .score { font-size:52px; font-weight:900; } .score small { font-size:17px; color:var(--muted); font-weight:600; }
+  .details { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:20px 0; text-align:left; }
+  .details div { background:rgba(0,0,0,.28); border:1px solid var(--border); border-radius:12px; padding:11px 13px; font-size:13.5px; }
+  .details span { display:block; font-size:11px; color:var(--muted); letter-spacing:.08em; margin-bottom:3px; }
+  .ref { font-family:var(--mono); font-size:12.5px; color:var(--muted); background:rgba(0,0,0,.3); border:1px dashed var(--border); border-radius:11px; padding:10px; margin-bottom:18px; }
+  .steps { text-align:left; background:rgba(77,227,194,.06); border:1px solid var(--border); border-radius:13px; padding:16px 18px; font-size:14px; line-height:1.7; margin-bottom:20px; }
+  .btn { display:block; width:100%; padding:14px; border-radius:13px; font-weight:800; font-size:15px; text-decoration:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0b0d17; margin-bottom:10px; }
+  .ghost { display:block; width:100%; padding:13px; border-radius:13px; color:var(--text); border:1px solid var(--border); text-decoration:none; font-size:14px; }
+  .fine { margin-top:14px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="pass">
+  <div class="seal">✓</div>
+  <div class="eyebrow">NEXT-ROUND PASS • AUTO-GENERATED</div>
+  <h1>You passed, {{CANDIDATE_NAME}}!</h1>
+  <p class="role">{{ROLE_NAME}} interview • scored {{SCORE}} / 10</p>
+  <div class="details">
+    <div><span>CANDIDATE</span>{{CANDIDATE_NAME}}</div>
+    <div><span>ROLE</span>{{ROLE_NAME}}</div>
+    <div><span>SCORE</span>{{SCORE}} / 10</div>
+    <div><span>ISSUED</span>{{DATE}}</div>
+  </div>
+  <div class="ref">Reference: {{TOKEN}} — show this code if asked.</div>
+  <div class="steps">
+    <b>What happens next</b><br>
+    1. Our hiring team has your interview + score on file.<br>
+    2. Keep this link — it's your personal proof of passing.<br>
+    3. {{NEXT_STEP}}
+  </div>
+  {{CUSTOM_BUTTON}}
+  <a class="ghost" href="/">← Back to open roles</a>
+  <p class="fine">InterviewCoach • verified voice interview • {{TOKEN}}</p>
+</div>
+</body>
+</html>

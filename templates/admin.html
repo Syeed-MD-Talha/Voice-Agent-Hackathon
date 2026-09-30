@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiring Dashboard — InterviewCoach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6ec; --paper: #fffdf8; --sunk: #f4eedf; --border: #e8dfca; --border2: #d9cdb0;
+    --text: #2a2620; --muted: #6f6858; --faint: #a19883;
+    --accent: #33449c; --accent-soft: #e9ebf8; --accent2: #33449c;
+    --green: #2f7a58; --green-soft: #e3f1e8; --red: #b4433a; --red-soft: #f8e6e2;
+    --radius: 16px;
+    --font: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --shadow: 0 1px 2px rgba(74,58,20,.05), 0 8px 28px rgba(74,58,20,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 24px 80px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  nav { display: flex; align-items: center; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
+  .logo { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 17px; }
+  .brand { font-family: var(--serif); font-weight: 600; font-size: 19px; line-height: 1.1; }
+  .brand small { display: block; font-family: var(--font); font-weight: 500; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  nav .spacer { flex: 1; }
+  nav a, .userchip { color: var(--muted); text-decoration: none; font-size: 13.5px; font-weight: 500; border: 1px solid var(--border2); padding: 8px 16px; border-radius: 999px; background: var(--paper); transition: color .15s, border-color .15s; }
+  nav a:hover { color: var(--accent); border-color: var(--accent); }
+  .userchip { display: flex; gap: 10px; align-items: center; }
+  .userchip button { background: none; border: none; color: var(--accent); cursor: pointer; font: 600 13px var(--font); padding: 0; }
+
+  h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(34px, 5vw, 52px); letter-spacing: -.02em; line-height: 1.05; }
+  .sub { color: var(--muted); font-size: 15.5px; margin: 12px 0 32px; max-width: 62ch; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 28px; }
+  .stat { padding: 22px 26px; border-left: 1px solid var(--border); }
+  .stat:first-child { border-left: none; }
+  .stat b { font-family: var(--serif); font-weight: 500; font-size: 40px; line-height: 1; display: block; letter-spacing: -.02em; }
+  .stat span { font-size: 13.5px; color: var(--muted); display: block; margin-top: 8px; }
+  @media (max-width: 800px) { .stats { grid-template-columns: 1fr 1fr; } .stat:nth-child(3) { border-left: none; } .stat:nth-child(n+3) { border-top: 1px solid var(--border); } }
+
+  .grid { display: grid; grid-template-columns: 470px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .card h2 { font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: -.01em; margin-bottom: 4px; }
+  .card p.desc { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+  .steps { display: flex; gap: 8px; margin-bottom: 24px; }
+  .steps span { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--faint); border-top: 3px solid var(--border); padding-top: 9px; }
+  .steps span.on { color: var(--accent); border-color: var(--accent); }
+
+  label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; color: var(--text); margin: 16px 0 6px; }
+  label .muted { font-weight: 400; }
+  input, textarea { width: 100%; padding: 11px 14px; font-size: 14.5px; border: 1px solid var(--border2); border-radius: 11px; background: #fff; color: var(--text); font-family: var(--font); transition: border-color .15s, box-shadow .15s; }
+  input::placeholder, textarea::placeholder { color: var(--faint); }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
+  textarea.jd { min-height: 120px; font-size: 14px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  button { border: none; border-radius: 11px; padding: 11px 20px; font: 600 14px var(--font); cursor: pointer; transition: background .15s, transform .1s, border-color .15s; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .primary { background: var(--accent); color: #fff; }
+  .primary:hover { background: #2a397f; }
+  .ghost { background: var(--paper); color: var(--text); border: 1px solid var(--border2); }
+  .ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .danger { background: var(--red-soft); color: var(--red); border: 1px solid #ecc6c0; }
+  .danger:hover { background: #f3d7d2; }
+  .mic { background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; padding: 5px 12px; font-size: 12.5px; border-radius: 999px; }
+  .mic.listening { background: var(--red-soft); color: var(--red); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .55; } }
+  .actions { display: flex; gap: 10px; margin-top: 24px; }
+
+  .genbox { background: var(--sunk); border: 1px dashed var(--border2); border-radius: 13px; padding: 16px; margin-top: 20px; }
+  .genbox p { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .genbox p b { color: var(--text); }
+
+  .qcard { border: 1px solid var(--border); border-radius: 13px; padding: 14px; margin-bottom: 12px; background: #fff; }
+  .qcard .qhead { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .qcard .qhead b { font-family: var(--serif); font-size: 17px; color: var(--accent); }
+  .qcard .qhead .spacer { flex: 1; }
+  .qcard .qhead button { padding: 4px 10px; font-size: 12.5px; }
+  .qcard input { font-size: 13.5px; margin-top: 8px; }
+  .qcard textarea { font-size: 14px; min-height: 68px; }
+
+  .stack { display: flex; flex-direction: column; gap: 24px; }
+  .role { border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; background: #fff; }
+  .role:last-child { margin-bottom: 0; }
+  .role h3 { font-family: var(--serif); font-weight: 600; font-size: 20px; }
+  .role .meta { font-size: 13px; color: var(--muted); margin: 4px 0 10px; font-family: var(--mono); }
+  .role p { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+  .linkbox { display: flex; gap: 10px; align-items: center; background: var(--accent-soft); border-radius: 11px; padding: 8px 8px 8px 14px; font-family: var(--mono); font-size: 12.5px; margin-bottom: 12px; }
+  .linkbox a { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; font-weight: 500; }
+  .linkbox button { background: #fff; }
+  .role-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .role-btns button { padding: 8px 14px; font-size: 13px; }
+
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { color: var(--muted); font-size: 12.5px; font-weight: 600; padding-top: 0; border-bottom-color: var(--border2); }
+  td b { font-weight: 600; }
+  .badge { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .badge.pass { background: var(--green-soft); color: var(--green); }
+  .badge.fail { background: var(--red-soft); color: var(--red); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .empty { color: var(--muted); padding: 28px; text-align: center; border: 1px dashed var(--border2); border-radius: 12px; background: var(--sunk); font-size: 14px; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; padding: 13px 20px; background: var(--text); color: #fffdf8; border-radius: 12px; font-size: 14px; font-weight: 500; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; box-shadow: 0 14px 40px rgba(42,38,32,.25); max-width: 360px; }
+  .toast.show { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo">◉</div>
+    <div class="brand">Hiring dashboard<small>InterviewCoach admin</small></div>
+    <div class="spacer"></div>
+    <span class="userchip" id="userchip" style="display:none"><span id="user-email"></span><button id="logout-btn">Sign out</button></span>
+    <a href="/">View careers site</a>
+  </nav>
+
+  <h1>Who are you hiring for?</h1>
+  <p class="sub">Describe the role, let AI draft the questions or write your own, then save and share the interview link with candidates.</p>
+
+  <div class="stats">
+    <div class="stat"><b id="st-roles">–</b><span>Open roles</span></div>
+    <div class="stat"><b id="st-sessions">–</b><span>Interviews done</span></div>
+    <div class="stat"><b id="st-pass">–</b><span>Passed</span></div>
+    <div class="stat"><b id="st-rate">–</b><span>Pass rate</span></div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <div class="steps"><span class="on">1 Basics</span><span>2 Topics and draft</span><span>3 Question bank</span></div>
+      <h2 id="form-title">+ New hiring role</h2>
+      <p class="desc">One role gets one shareable voice-interview link.</p>
+      <form id="role-form" onsubmit="return false">
+        <label>Role name</label><input id="name" placeholder="Junior Software Engineer" required>
+        <div class="muted" id="link-preview" style="margin-top:8px">Interview link generates automatically from the name.</div>
+        <label>Description</label><input id="description" placeholder="Entry-level engineering role, remote-friendly">
+        <div class="row2">
+          <div><label>Pass score (0–10)</label><input id="pass_threshold" type="number" step="0.1" min="0" max="10" value="6.5" required></div>
+          <div><label>Questions</label><input id="qcount" type="number" min="1" max="8" value="5" title="How many to generate"></div>
+        </div>
+        <label>Job description <span class="muted">guides the AI draft</span></label>
+        <textarea id="jd_text" class="jd" placeholder="Paste the job description: responsibilities, must-have skills, what success looks like in 90 days…"></textarea>
+        <label>Topics and skills <button type="button" class="mic" data-dictate="topics">🎤 Dictate</button></label>
+        <input id="topics" placeholder="debugging, system design basics, teamwork">
+        <div class="genbox">
+          <p><b>AI draft.</b> Builds structured questions from the role, JD and topics. It's a first draft, so review before saving. <span id="gen-source" class="muted"></span></p>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="primary" id="gen-btn" style="flex:1">✨ Generate question bank</button>
+            <button type="button" class="ghost" id="add-q">+ Blank</button>
+          </div>
+        </div>
+        <label>Question bank <span class="muted" id="q-meta"></span></label>
+        <div id="qlist"><div class="empty">No questions yet. Generate a draft, dictate, or add one manually.</div></div>
+        <div class="actions"><button class="primary" type="submit" id="save-btn" style="flex:1">Save role</button><button type="button" class="ghost" id="reset-btn">Reset</button></div>
+      </form>
+    </section>
+
+    <div class="stack">
+      <section class="card">
+        <h2>Open roles and interview links</h2>
+        <p class="desc">Send the <b style="color:var(--accent2)">/interview/…</b> link to candidates for that role.</p>
+        <div id="roles-list"><div class="empty">Loading roles…</div></div>
+      </section>
+      <section class="card">
+        <h2>Next-round passes</h2>
+        <p class="desc">Every candidate who passes gets a unique <b style="color:var(--accent2)">/onboard/…</b> link automatically, no Calendly needed.</p>
+        <div id="passes-list"><div class="empty">Loading passes…</div></div>
+      </section>
+      <section class="card">
+        <h2>Recent interviews</h2>
+        <p class="desc">Scores, results and candidate details appear here live.</p>
+        <div id="sessions-list"><div class="empty">Loading sessions…</div></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+function toast(m){ const el=$('toast'); el.textContent=m; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3000); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function api(path, opts={}) {
+  const res = await fetch(path, { headers:{'Content-Type':'application/json'}, ...opts });
+  if (res.status === 401) { location.href = '/login'; throw new Error('signed out'); }
+  if (res.status === 204) return null;
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.error || ('HTTP '+res.status));
+  return data;
+}
+
+// --- auth gate ---
+async function me(){
+  try {
+    const d = await api('/api/auth/me');
+    $('userchip').style.display = 'flex';
+    $('user-email').textContent = d.user.email;
+  } catch(e){ /* redirected */ }
+}
+$('logout-btn').onclick = async () => {
+  await fetch('/api/auth/logout', { method:'POST' });
+  location.href = '/login';
+};
+
+// --- voice dictation assist (Web Speech API, free, on-device where supported) ---
+function dictateInto(targetId, btn){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('Voice dictation not supported in this browser — try Chrome.'); return; }
+  const rec = new SR();
+  rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
+  btn.classList.add('listening'); const old = btn.textContent; btn.textContent = '● Listening…';
+  rec.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    const t = $(targetId);
+    if (t) { t.value = (t.value ? t.value.replace(/\s+$/,'') + (/[,.\n]$/.test(t.value)?' ':', ') : '') + text; t.dispatchEvent(new Event('input')); }
+  };
+  rec.onerror = (e) => toast('Dictation: ' + (e.error || 'error'));
+  rec.onend = () => { btn.classList.remove('listening'); btn.textContent = old; };
+  rec.start();
+}
+document.querySelectorAll('[data-dictate]').forEach(b => b.onclick = () => dictateInto(b.dataset.dictate, b));
+
+// --- question bank cards ---
+let bank = [];
+function qText(q){ return typeof q === 'string' ? q : (q.question || ''); }
+function renderBank(){
+  const box = $('qlist');
+  $('q-meta').textContent = bank.length ? bank.length + ' questions' : '';
+  if (!bank.length) { box.innerHTML = '<div class="empty">No questions yet. Generate a draft, dictate, or add one manually.</div>'; return; }
+  box.innerHTML = '';
+  bank.forEach((q, i) => {
+    const d = document.createElement('div');
+    d.className = 'qcard';
+    d.innerHTML = `
+      <div class="qhead"><b>Q${i+1}</b><span class="muted">${esc(q.competency||'')}</span><span class="spacer"></span>
+        <button type="button" class="ghost" data-a="up" aria-label="Move up">↑</button><button type="button" class="ghost" data-a="down" aria-label="Move down">↓</button>
+        <button type="button" class="danger" data-a="del" aria-label="Remove question">✕</button></div>
+      <textarea data-f="question" placeholder="Question ${i+1}: one skill, open-ended…">${esc(q.question||'')}</textarea>
+      <input data-f="criteria" placeholder="What a good answer looks like (scoring rubric)…" value="${esc(q.criteria||'')}">
+      <input data-f="competency" placeholder="Competency or skill tag…" value="${esc(q.competency||'')}">
+      <div style="margin-top:10px"><button type="button" class="mic" data-a="mic">🎤 Dictate this question</button></div>`;
+    d.querySelector('[data-f="question"]').oninput = (e) => bank[i].question = e.target.value;
+    d.querySelector('[data-f="criteria"]').oninput = (e) => bank[i].criteria = e.target.value;
+    d.querySelector('[data-f="competency"]').oninput = (e) => bank[i].competency = e.target.value;
+    d.querySelector('[data-a="del"]').onclick = () => { bank.splice(i,1); renderBank(); };
+    d.querySelector('[data-a="up"]').onclick = () => { if(i>0){ [bank[i-1],bank[i]]=[bank[i],bank[i-1]]; renderBank(); } };
+    d.querySelector('[data-a="down"]').onclick = () => { if(i<bank.length-1){ [bank[i+1],bank[i]]=[bank[i],bank[i+1]]; renderBank(); } };
+    d.querySelector('[data-a="mic"]').onclick = (ev) => {
+      const ta = d.querySelector('[data-f="question"]');
+      ta.id = 'qta-' + i;
+      dictateInto(ta.id, ev.target);
+      ta.oninput = (e) => bank[i].question = e.target.value;
+    };
+    box.append(d);
+  });
+}
+$('add-q').onclick = () => { bank.push({question:'',criteria:'',competency:''}); renderBank(); };
+
+$('gen-btn').onclick = async () => {
+  const btn = $('gen-btn');
+  btn.disabled = true; btn.textContent = 'Generating…';
+  try {
+    const data = await api('/admin/generate-questions', { method:'POST', body: JSON.stringify({
+      role_name: $('name').value.trim() || 'Candidate',
+      jd_text: $('jd_text').value,
+      topics: $('topics').value,
+      count: parseInt($('qcount').value, 10) || 5,
+    })});
+    bank = data.questions || [];
+    $('gen-source').textContent = ['mistral', 'openai'].includes(data.source) ? '(AI-powered)' : '(local templates — add a MISTRAL_API_KEY for AI drafting)';
+    renderBank();
+    toast(bank.length + ' questions drafted. Review and save ✓');
+  } catch(e){ toast('Generate failed: ' + e.message); }
+  btn.disabled = false; btn.textContent = '✨ Generate question bank';
+};
+
+// --- roles + sessions ---
+async function loadRoles(){
+  const data = await api('/admin/roles');
+  const roles = data.roles || [];
+  $('st-roles').textContent = roles.length;
+  const box = $('roles-list');
+  if(!roles.length){ box.innerHTML = '<div class="empty">No roles yet. Create your first one on the left.</div>'; return; }
+  const base = location.origin;
+  box.innerHTML = roles.map(r=>{
+    const qs = r.questions || [];
+    return `
+    <div class="role">
+      <h3>${esc(r.name)}</h3>
+      <div class="meta">/${esc(r.slug)} • ${qs.length} questions • pass ≥ ${r.pass_threshold}</div>
+      <p>${esc(r.description||'')}</p>
+      ${(r.topics&&r.topics.length)?`<div class="muted" style="margin-bottom:10px">Topics: ${esc(r.topics.join(', '))}</div>`:''}
+      <div class="linkbox"><a href="${base}/interview/${encodeURIComponent(r.slug)}" target="_blank">${base}/interview/${esc(r.slug)}</a><button class="ghost" style="padding:6px 14px" onclick="copyLink('${esc(r.slug)}')">Copy</button></div>
+      <div class="muted" style="margin-bottom:12px">Next-round passes generate at <b style="color:var(--accent2)">/onboard/…</b></div>
+      <div class="role-btns">
+        <button class="ghost" onclick="window.open('/interview/${encodeURIComponent(r.slug)}','_blank')">Preview</button>
+        <button class="ghost" onclick="editRole('${esc(r.slug)}')">Edit</button>
+        <button class="danger" onclick="deleteRole('${esc(r.slug)}')">Delete</button>
+      </div>
+    </div>`; }).join('');
+}
+async function loadSessions(){
+  const data = await api('/admin/sessions');
+  const sessions = data.sessions || [];
+  $('st-sessions').textContent = sessions.length;
+  const passed = sessions.filter(s=>s.passed).length;
+  $('st-pass').textContent = passed;
+  $('st-rate').textContent = sessions.length ? Math.round(passed/sessions.length*100)+'%' : '—';
+  const box = $('sessions-list');
+  if(!sessions.length){ box.innerHTML = '<div class="empty">No interviews yet. Share a role link to get started.</div>'; return; }
+  box.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Candidate</th><th>Role</th><th>Score</th><th>Result</th><th>Date</th></tr></thead><tbody>
+    ${sessions.map(s=>`<tr><td><b>${esc(s.candidate_name||'Anonymous')}</b><div class="muted">${esc(s.candidate_email||'')}</div><div class="muted">${(s.answers||[]).length} answers</div></td>
+    <td>${esc(s.role_slug)}</td><td><b>${s.average_score}</b></td>
+    <td><span class="badge ${s.passed?'pass':'fail'}">${s.passed?'Passed, next round':'Not passed'}</span></td>
+    <td class="muted">${esc(s.created_at||'')}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function copyLink(slug){
+  const url = location.origin + '/interview/' + slug;
+  navigator.clipboard.writeText(url).then(()=>toast('Interview link copied ✓')).catch(()=>prompt('Copy this link:', url));
+}
+function copyText(url){
+  navigator.clipboard.writeText(url).then(()=>toast('Pass link copied ✓')).catch(()=>prompt('Copy this link:', url));
+}
+async function loadPasses(){
+  let passes = [];
+  try { passes = (await api('/admin/passes')).passes || []; }
+  catch(e){ return; }
+  const box = $('passes-list');
+  if(!box) return;
+  if(!passes.length){ box.innerHTML = '<div class="empty">No passes yet. They appear here automatically when someone passes.</div>'; return; }
+  const base = location.origin;
+  box.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Candidate</th><th>Role</th><th>Score</th><th>Pass link</th><th>Date</th></tr></thead><tbody>
+    ${passes.slice(0,20).map(p=>{ const url = base + p.path; return `<tr><td><b>${esc(p.candidate_name||'Anonymous')}</b><div class="muted">${esc(p.candidate_email||'')}</div></td>
+    <td>${esc(p.role_slug)}</td><td><b>${p.average_score}</b></td>
+    <td><a href="${url}" target="_blank" style="color:var(--accent);font-family:var(--mono);font-size:12.5px;text-decoration:none">/onboard/${esc(p.token.slice(0,8))}…</a> <button class="ghost" style="padding:4px 10px;font-size:12px" onclick="copyText('${url}')">Copy</button></td>
+    <td class="muted">${esc(p.created_at||'')}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+window.copyText = copyText;
+$('role-form').onsubmit = async () => {
+  const questions = bank.map(q=>({question:(q.question||'').trim(), criteria:(q.criteria||'').trim(), competency:(q.competency||'').trim()})).filter(q=>q.question);
+  if(!questions.length){ toast('Add at least one question'); return false; }
+  if (!$('name').value.trim()) { toast('Give the role a name first'); return false; }
+  // No slug sent: the server auto-generates the interview link from the name.
+  // When editing, the existing link stays untouched so shared links keep working.
+  const body = {
+    name: $('name').value.trim(),
+    description: $('description').value.trim(),
+    pass_threshold: parseFloat($('pass_threshold').value),
+    jd_text: $('jd_text').value,
+    topics: $('topics').value.split(',').map(t=>t.trim()).filter(Boolean),
+    questions,
+  };
+  const form = $('role-form');
+  const editing = form.dataset.editing;
+  try {
+    const saved = await api(editing ? '/admin/roles/'+editing : '/admin/roles', { method: editing?'PUT':'POST', body: JSON.stringify(body) });
+    if (!editing && saved && saved.slug) {
+      toast('Role created — link: /interview/' + saved.slug + ' ✓');
+    } else {
+      toast(editing ? 'Role updated ✓' : 'Role created ✓');
+    }
+    form.reset(); bank = []; renderBank(); delete form.dataset.editing; $('form-title').textContent = '+ New hiring role'; updateLinkPreview();
+    await loadRoles();
+  } catch(err){ toast('Error: '+err.message); }
+  return false;
+};
+function slugPreview(name){
+  return name.trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || '…';
+}
+function updateLinkPreview(){
+  const editing = $('role-form').dataset.editing;
+  const el = $('link-preview');
+  if (!el) return;
+  if (editing) {
+    el.innerHTML = 'Interview link: <b>' + esc(location.origin + '/interview/' + editing) + '</b> (fixed — editing keeps it stable)';
+  } else {
+    const s = slugPreview($('name').value);
+    el.innerHTML = s === '…' ? 'Interview link generates automatically from the name.'
+      : 'Interview link will be: <b>' + esc(location.origin + '/interview/' + s) + '</b>';
+  }
+}
+$('name').addEventListener('input', updateLinkPreview);
+$('reset-btn').onclick = ()=>{ $('role-form').reset(); bank=[]; renderBank(); delete $('role-form').dataset.editing; $('form-title').textContent='+ New hiring role'; updateLinkPreview(); };
+window.editRole = async (slug)=>{
+  const r = await api('/admin/roles/'+slug);
+  $('name').value=r.name; $('description').value=r.description||'';
+  $('pass_threshold').value=r.pass_threshold;
+  $('jd_text').value=r.jd_text||''; $('topics').value=(r.topics||[]).join(', ');
+  bank = (r.questions||[]).map(q=>typeof q==='string'?{question:q,criteria:'',competency:''}:q);
+  renderBank();
+  $('role-form').dataset.editing=r.slug; $('form-title').textContent='Editing '+r.name; updateLinkPreview();
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+window.deleteRole = async (slug)=>{
+  if(!confirm('Delete "'+slug+'"? Candidates with the link will stop working.')) return;
+  await api('/admin/roles/'+slug,{method:'DELETE'}); toast('Role deleted'); await loadRoles();
+};
+window.copyLink = copyLink;
+me().then(loadRoles).then(loadSessions).then(loadPasses).catch(()=>{});
+setInterval(()=>{ loadSessions().catch(()=>{}); loadPasses().catch(()=>{}); }, 8000);
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+// InterviewCoach — AI Voice Interview Coach
+//
+// A real-time voice agent that conducts mock job interviews, evaluates answers,
+// tracks filler words and pacing, and gives instant spoken coaching feedback.
+//
+// Powered entirely by the AssemblyAI Voice Agent API — no OpenAI key needed.
+// The built-in managed LLM handles all reasoning and feedback generation.
+// Tools are client-side: the browser forwards tool.call events to
+// interview_tools_server.py running on port 8002.
+//
+// Flow:
+//   1. Agent greets and asks what role the user is practising for.
+//   2. Agent calls get_question to fetch a relevant question.
+//   3. User answers out loud.
+//   4. Agent calls evaluate_answer with the transcript.
+//   5. Agent speaks feedback, then asks if the user wants the next question.
+//   6. After all questions, agent calls get_session_summary for a final report.
+//
+// https://www.assemblyai.com/docs/voice-agents/voice-agent-api/create-agent
+{
+  "name": "InterviewCoach",
+
+  "system_prompt": "You are Talha, a professional AI hiring interviewer conducting a live voice job interview. Your job is to interview the candidate for the specific role they opened via their interview link, ask each question one at a time, and give short, warm, specific spoken coaching after each answer.\n\nRules:\n- Keep every reply to one or two short spoken sentences. No bullet points or lists read aloud.\n- The candidate opened a role-specific link (e.g. /interview/junior-software-engineer). The role is given in the first user message. Do not ask what role they want; use the role provided for all tool calls.\n- Call get_question with the role slug and question_number to fetch each question. Start with question_number 1.\n- After the candidate finishes each answer, call evaluate_answer with the exact question and the full answer transcript plus role. Then briefly state the score and one key improvement tip.\n- After evaluate_answer, ask if they are ready for the next question, then call get_question again with question_number incremented by 1.\n- After all questions are answered, call get_session_summary and read out the overall result. If they passed, congratulate them warmly and tell them the next-round link is now open on their screen. If not, encourage them to try again.\n- Be encouraging but honest. Do not fabricate scores. If a tool fails, say you could not score that one and move on.\n- Never say 'bullet points', 'score out of ten', or 'feedback'. Say things like 'that answer was strong', 'one thing to tighten up' or 'overall today'.",
+
+  "greeting": "Hey, welcome — I'm Talha, your interviewer today. We'll do a few questions for this role. Take your time and speak naturally. Let's begin.",
+
+  "voice": { "voice_id": "george" },
+
+  // Turn detection tuned for interviews: candidates need time to think.
+  // Longer min_silence (1500ms) stops the agent cutting in mid-thought.
+  // https://www.assemblyai.com/docs/voice-agents/voice-agent-api/turn-detection-and-interruptions
+  "input": {
+    "turn_detection": {
+      "vad_threshold": 0.5,
+      "min_silence": 1500,
+      "max_silence": 4000,
+      "interrupt_response": true
+    }
+  },
+
+  // Key terms help AssemblyAI transcribe job-specific vocabulary accurately.
+  // https://www.assemblyai.com/docs/voice-agents/voice-agent-api/transcription-prompt
+  "keyterms": [
+    "behavioural", "STAR method", "stakeholder", "agile", "KPIs",
+    "cross-functional", "deliverable", "scalable", "full-stack",
+    "machine learning", "product manager", "senior engineer"
+  ],
+
+  "tools": [
+    {
+      // Fetch the next interview question for a given role and question number.
+      "type": "function",
+      "name": "get_question",
+      "description": "Get the next interview question for the candidate's target role. Call this after the candidate tells you the role, and again after each evaluated answer to get the next question.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "The job role or title the candidate is practising for, e.g. 'software engineer', 'product manager', 'data scientist'."
+          },
+          "question_number": {
+            "type": "integer",
+            "description": "Which question to fetch, starting at 1. Increment by 1 after each evaluated answer."
+          }
+        },
+        "required": ["role", "question_number"]
+      },
+      "execution_mode": "hold",
+      "timeout_seconds": 10
+    },
+    {
+      // Evaluate the candidate's spoken answer and return a score with feedback.
+      "type": "function",
+      "name": "evaluate_answer",
+      "description": "Evaluate the candidate's spoken answer to an interview question. Returns a score and coaching feedback. Call this immediately after the candidate finishes answering.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The exact interview question that was asked."
+          },
+          "answer": {
+            "type": "string",
+            "description": "The full transcript of the candidate's spoken answer."
+          },
+          "role": {
+            "type": "string",
+            "description": "The job role the candidate is interviewing for."
+          }
+        },
+        "required": ["question", "answer", "role"]
+      },
+      "execution_mode": "hold",
+      "timeout_seconds": 15
+    },
+    {
+      // Get a final session summary after all questions are complete.
+      "type": "function",
+      "name": "get_session_summary",
+      "description": "Get a final summary of the entire interview session including overall score and top improvement tips. Call this after the candidate has answered all 5 questions.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "The job role the candidate practised for."
+          }
+        },
+        "required": ["role"]
+      },
+      "execution_mode": "hold",
+      "timeout_seconds": 10
+    }
+  ]
+}
