@@ -817,6 +817,15 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args) -> None:
         pass
 
+    def handle_error(self, request, client_address) -> None:
+        # Harmless noise: browsers and Render's probes routinely drop idle
+        # keep-alive connections mid-read. Don't dump tracebacks for those.
+        import socket
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionResetError, BrokenPipeError, socket.timeout)):
+            return
+        super().handle_error(request, client_address)
+
 
 # ---------------------------------------------------------------------------
 # Entry point
