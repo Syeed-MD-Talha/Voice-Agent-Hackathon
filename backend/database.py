@@ -32,6 +32,14 @@ def _migrate() -> None:
             conn.execute("ALTER TABLE roles ADD COLUMN jd_text TEXT DEFAULT ''")
         if "topics_json" not in cols:
             conn.execute("ALTER TABLE roles ADD COLUMN topics_json TEXT DEFAULT '[]'")
+        if "owner_id" not in cols:
+            conn.execute("ALTER TABLE roles ADD COLUMN owner_id INTEGER")
+        # Backfill: roles created before ownership existed belong to the
+        # oldest admin account. Fresh seed/demo roles (no users yet) stay
+        # ownerless = shared demos visible to every admin.
+        first = conn.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+        if first:
+            conn.execute("UPDATE roles SET owner_id = ? WHERE owner_id IS NULL", (first["id"],))
 
 
 def init_db() -> None:
@@ -48,7 +56,9 @@ def init_db() -> None:
                 questions_json TEXT NOT NULL,
                 jd_text TEXT DEFAULT '',
                 topics_json TEXT DEFAULT '[]',
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                owner_id INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL
             );
 
             CREATE TABLE IF NOT EXISTS sessions (
@@ -296,9 +306,17 @@ def _normalize_questions(value: Any) -> list[dict[str, str]]:
     return out
 
 
-def list_roles() -> list[dict[str, Any]]:
+def list_roles(owner_id: int | None = None, mine_only: bool = False) -> list[dict[str, Any]]:
+    """List roles. With mine_only=True (admin dashboard), an admin sees only
+    their own roles plus shared ownerless demo roles."""
     with _connect() as conn:
-        rows = conn.execute("SELECT * FROM roles ORDER BY name").fetchall()
+        if mine_only and owner_id is not None:
+            rows = conn.execute(
+                "SELECT * FROM roles WHERE owner_id IS NULL OR owner_id = ? ORDER BY name",
+                (owner_id,),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM roles ORDER BY name").fetchall()
         return [_role_from_row(r) for r in rows]
 
 
@@ -317,8 +335,8 @@ def create_role(role: dict[str, Any]) -> dict[str, Any]:
         conn.execute(
             """
             INSERT INTO roles (slug, name, description, pass_threshold, onboarding_url,
-                               questions_json, jd_text, topics_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                               questions_json, jd_text, topics_json, owner_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 role["slug"],
@@ -329,6 +347,7 @@ def create_role(role: dict[str, Any]) -> dict[str, Any]:
                 json.dumps(questions),
                 str(role.get("jd_text", "") or ""),
                 json.dumps(topics),
+                role.get("owner_id"),
             ),
         )
     result = get_role(role["slug"])
@@ -337,7 +356,19 @@ def create_role(role: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def update_role(slug: str, updates: dict[str, Any]) -> dict[str, Any] | None:
+def _can_manage(role: dict[str, Any] | None, owner_id: int | None) -> bool:
+    """Owner-only for owned roles; shared ownerless demo roles are manageable by all."""
+    if not role:
+        return False
+    if owner_id is None:
+        return True  # internal callers (no admin context)
+    return role.get("owner_id") is None or role.get("owner_id") == owner_id
+
+
+def update_role(slug: str, updates: dict[str, Any], owner_id: int | None = None) -> dict[str, Any] | None:
+    existing = get_role(slug)
+    if not _can_manage(existing, owner_id):
+        return None
     allowed = {"name", "description", "pass_threshold", "onboarding_url", "questions", "jd_text", "topics"}
     fields = {k: v for k, v in updates.items() if k in allowed}
     if not fields:
@@ -356,7 +387,9 @@ def update_role(slug: str, updates: dict[str, Any]) -> dict[str, Any] | None:
     return get_role(slug)
 
 
-def delete_role(slug: str) -> bool:
+def delete_role(slug: str, owner_id: int | None = None) -> bool:
+    if not _can_manage(get_role(slug), owner_id):
+        return False
     with _connect() as conn:
         cur = conn.execute("DELETE FROM roles WHERE slug = ?", (slug,))
         return cur.rowcount > 0
@@ -389,15 +422,25 @@ def save_session(
         return int(cur.lastrowid)
 
 
-def list_sessions(role_slug: str | None = None) -> list[dict[str, Any]]:
-    query = "SELECT * FROM sessions"
-    params: tuple = ()
+def list_sessions(role_slug: str | None = None, owner_id: int | None = None,
+                  mine_only: bool = False) -> list[dict[str, Any]]:
+    """With mine_only=True, only sessions for the admin's own roles
+    (plus shared demo roles) are returned."""
+    query = "SELECT s.* FROM sessions s"
+    params: list = []
+    clauses: list[str] = []
+    if mine_only and owner_id is not None:
+        clauses.append(
+            "s.role_slug IN (SELECT slug FROM roles WHERE owner_id IS NULL OR owner_id = ?)")
+        params.append(owner_id)
     if role_slug:
-        query += " WHERE role_slug = ?"
-        params = (role_slug,)
-    query += " ORDER BY created_at DESC"
+        clauses.append("s.role_slug = ?")
+        params.append(role_slug)
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+    query += " ORDER BY s.created_at DESC"
     with _connect() as conn:
-        rows = conn.execute(query, params).fetchall()
+        rows = conn.execute(query, tuple(params)).fetchall()
         return [_session_from_row(r) for r in rows]
 
 
@@ -442,15 +485,23 @@ def get_onboarding_pass(token: str) -> dict[str, Any] | None:
     }
 
 
-def list_onboarding_passes(role_slug: str | None = None) -> list[dict[str, Any]]:
-    query = "SELECT * FROM onboarding_passes"
-    params: tuple = ()
+def list_onboarding_passes(role_slug: str | None = None, owner_id: int | None = None,
+                           mine_only: bool = False) -> list[dict[str, Any]]:
+    query = "SELECT p.* FROM onboarding_passes p"
+    params: list = []
+    clauses: list[str] = []
+    if mine_only and owner_id is not None:
+        clauses.append(
+            "p.role_slug IN (SELECT slug FROM roles WHERE owner_id IS NULL OR owner_id = ?)")
+        params.append(owner_id)
     if role_slug:
-        query += " WHERE role_slug = ?"
-        params = (role_slug,)
-    query += " ORDER BY created_at DESC"
+        clauses.append("p.role_slug = ?")
+        params.append(role_slug)
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+    query += " ORDER BY p.created_at DESC"
     with _connect() as conn:
-        rows = conn.execute(query, params).fetchall()
+        rows = conn.execute(query, tuple(params)).fetchall()
     return [
         {
             "token": r["token"],
@@ -479,6 +530,10 @@ def _role_from_row(row: sqlite3.Row) -> dict[str, Any]:
     jd_text = row["jd_text"] if "jd_text" in row.keys() else ""
     # Back-compat: API consumers expect questions as objects now, plus a
     # plain string list for older clients.
+    try:
+        owner_id = row["owner_id"] if "owner_id" in row.keys() else None
+    except (KeyError, IndexError):
+        owner_id = None
     return {
         "id": row["id"],
         "slug": row["slug"],
@@ -490,6 +545,7 @@ def _role_from_row(row: sqlite3.Row) -> dict[str, Any]:
         "question_texts": [q["question"] for q in questions],
         "jd_text": jd_text or "",
         "topics": _normalize_topics(topics),
+        "owner_id": owner_id,
         "created_at": row["created_at"],
     }
 

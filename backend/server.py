@@ -751,7 +751,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/admin/roles" and self.command == "GET":
-            self._send(200, json.dumps({"roles": list_roles()}).encode(), "application/json")
+            roles = list_roles(owner_id=user["id"], mine_only=True)
+            self._send(200, json.dumps({"roles": roles}).encode(), "application/json")
             return
 
         if path == "/admin/roles" and self.command == "POST":
@@ -760,6 +761,7 @@ class Handler(BaseHTTPRequestHandler):
                 # admin never types a URL. Collisions get a numeric suffix.
                 if not str(data.get("slug", "")).strip():
                     data["slug"] = _unique_slug(str(data.get("name", "")))
+                data["owner_id"] = user["id"]
                 role = create_role(data)
                 self._send(201, json.dumps(role).encode(), "application/json")
             except Exception as err:
@@ -770,33 +772,35 @@ class Handler(BaseHTTPRequestHandler):
             slug = path[len("/admin/roles/"):]
             if self.command == "GET":
                 role = get_role(slug)
-                if role:
+                if role and (role.get("owner_id") is None or role.get("owner_id") == user["id"]):
                     self._send(200, json.dumps(role).encode(), "application/json")
                 else:
                     self._send(404, b'{"error":"role not found"}', "application/json")
                 return
             if self.command == "PUT":
-                role = update_role(slug, data)
+                role = update_role(slug, data, owner_id=user["id"])
                 if role:
                     self._send(200, json.dumps(role).encode(), "application/json")
                 else:
                     self._send(404, b'{"error":"role not found"}', "application/json")
                 return
             if self.command == "DELETE":
-                if delete_role(slug):
+                if delete_role(slug, owner_id=user["id"]):
                     self._send(204, b"", "application/json")
                 else:
                     self._send(404, b'{"error":"role not found"}', "application/json")
                 return
 
         if path == "/admin/sessions" and self.command == "GET":
-            self._send(200, json.dumps({"sessions": list_sessions()}).encode(), "application/json")
+            sessions = list_sessions(owner_id=user["id"], mine_only=True)
+            self._send(200, json.dumps({"sessions": sessions}).encode(), "application/json")
             return
 
         if path == "/admin/passes" and self.command == "GET":
             from database import list_onboarding_passes
             role_slug = data.get("role_slug") if isinstance(data, dict) else None
-            self._send(200, json.dumps({"passes": list_onboarding_passes(role_slug)}).encode(),
+            passes = list_onboarding_passes(role_slug, owner_id=user["id"], mine_only=True)
+            self._send(200, json.dumps({"passes": passes}).encode(),
                         "application/json")
             return
 
