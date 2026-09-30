@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: interviewcoach
+    runtime: python
+    buildCommand: ""
+    # Tools API (:8002) runs in the background, web server uses $PORT
+    startCommand: bash start.sh
+    envVars:
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
